@@ -1,5 +1,28 @@
 from collections import UserDict
 from datetime import datetime
+from functools import wraps
+
+
+
+
+def parse_input(user_input):                           
+    cmd, *args = user_input.split()                      
+    cmd = cmd.lower().strip()                            
+    return cmd, *args                                    
+
+
+def input_error(func):
+    @wraps(func)
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs) 
+        except IndexError:                             
+            return 'Please give me name and phone number!'
+        except KeyError:                               
+            return 'Ther is no such person in contacts!'
+        except ValueError:                             
+            return 'Give me name and phone number please'
+    return inner
 
 #Making class Field that will be used as a base class for Name and Phone
 class Field:
@@ -25,18 +48,26 @@ class Birthday(Field):
     def __init__(self,value):
         if isinstance(value, str):
             try:
-                value = datetime.strptime(value, '%D-%M-%Y').date()
+                value = datetime.strptime(value, '%d.%m.%Y').date()
             except ValueError:
-                raise ValueError("Birthday must be in the format 'DD-MM-YYYY'.")
+                raise ValueError("Birthday must be in the format 'DD.MM.YYYY'.")
+        super().__init__(value)
+        
 # Making class Record that will hold contact information
 class Record:
     def __init__(self, name):
         self.name = Name(name)
         self.phones = []
-        self.birthday = Birthday(None)
+        self.birthday = None
 
     def __str__(self):
         return f'Contact name: {self.name.value}, Phones: {",".join(str(p) for p in self.phones)}'
+    
+    def add_birthday(self, birthday):
+        if isinstance(birthday, str):
+            birthday = Birthday(birthday)
+        self.birthday = birthday
+
     
 #Method for adding phone number    
     def add_phone(self, phone):
@@ -86,6 +117,70 @@ class AddressBook(UserDict):
     def __str__(self):
         return '\n'.join(str(record) for record in self.data.values())
     
+
+@input_error
+def add_contacts(args, book):
+    name, phone, *_ = args
+    record = book.find(name)
+    massage = 'Contact updated'
+    if record is None:
+        record = Record(name)
+        book.add_record(record)
+    if phone:
+        record.add_phone(phone)
+    return massage
+
+@input_error
+def change_contacts(args, book):
+    name, old_phone, new_phone = args
+    record = book.find(name)
+    if record is None:
+        raise KeyError(f'No contact found with name {name}')
+    record.edit_phone(new_phone)
+    return f'Phone number for {name} changed from {old_phone} to {new_phone}'
+
+@input_error
+def show_phone(args, book):
+    name = args[0]
+    record = book.find(name)
+    if record is None:
+        raise KeyError(f'No contact found with name {name}')
+    phones = ', '.join(str(phone) for phone in record.phones)
+    return f'Phone numbers for {name}: {phones}' if phones else f'No phone numbers found for {name}'
+
+def show_all_contacts(book):
+    if not book.data:
+        return 'No contacts found.'
+    return '\n'.join(str(record) for record in book.data.values())
+    
+
+
+def main():
+    book = AddressBook()                                       
+    print('Welcome to assistant bot!')                   
+    while True:                                         
+        user_input = input('Enter command: ')
+        command, *args = parse_input(user_input)
+
+        if command in ['exit', 'close']:
+            print('Goodbye!')
+            break                                        
+        elif command == 'hello':
+            print('How can i help you?')
+        elif command == 'add':          
+            print(add_contacts(args, book))
+        elif command == 'all':
+            print(f'All contacts: {show_all_contacts(book)}')
+        elif command == 'change':
+            print(change_contacts(args, book))
+        elif command == 'phone':
+            print(show_phone(args, book))
+        else:                                             
+            print('Invalid command!') 
+
+
+if __name__ == '__main__':
+    main()  
 
 
 
