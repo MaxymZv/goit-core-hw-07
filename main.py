@@ -174,22 +174,21 @@ def add_birthday(args, book):
     return f'Birthday for {name} added: {record.birthday.value}' if record.birthday else f'No birthday found for {name}'
 
 @input_error
-def show_birthdays(book):
-    upcoming_birthdays = book.get_upcoming_birthday()
-    if not upcoming_birthdays:
+def show_birthdays(args ,book):
+    record = book.find(args[0]) if args else None
+    upcoming_birthdays = record.birthday.value
+    if not record.birthday.value:
         return 'No upcoming birthdays found.'
     return '\n'.join(f'{name}: {date}' for name, date in upcoming_birthdays)
 
 @input_error
 def birthdays(args, book):
-    if not args:
-        return show_birthdays(book)
     name = args[0]
     record = book.find(name)
     if record is None:
         raise KeyError(f'No contact found with name {name}')
     if record.birthday:
-        return f'Birthday for {name}: {record.birthday.value}'
+        return f'Birthday for {name}: {book.get_upcoming_birthday()}'
     
 
 
@@ -219,7 +218,7 @@ def main():
         elif command == 'add-birthday':
             print(add_birthday(args, book))
         elif command == 'show-birthdays':
-            print(show_birthdays(book))
+            print(show_birthdays(args, book))
         elif command == 'birthdays':
             print(birthdays(args, book))
         else:                                             
