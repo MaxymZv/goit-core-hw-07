@@ -47,6 +47,11 @@ class Record:
         if isinstance(birthday, str):
             birthday = Birthday(birthday)
         self.birthday = birthday
+    
+    def get_birthday(self):
+        if self.birthday:
+            return self.birthday.value
+        return None
 
     
 #Method for adding phone number    
@@ -175,19 +180,19 @@ def add_birthday(args, book):
 
 @input_error
 def show_birthdays(args ,book):
-    record = book.find(args[0]) if args else None
-    upcoming_birthdays = record.birthday.value
-    if not record.birthday.value:
+    person_birthday = record.get_birthday()
+    if not record.get_birthday():
         return 'No upcoming birthdays found.'
-    return '\n'.join(f'{name}: {date}' for name, date in upcoming_birthdays)
+    return '\n'.join(f'{name}: {date}' for name, date in person_birthday)
 
 @input_error
 def birthdays(args, book):
-    name = args[0]
-    record = book.find(name)
+    upcoming_birthdays = book.get_upcoming_birthday()
+    if not upcoming_birthdays:
+        return 'No upcoming birthdays found.'
     if record is None:
         raise KeyError(f'No contact found with name {name}')
-    if record.birthday:
+    elif book.get_upcoming_birthday():
         return f'Birthday for {name}: {book.get_upcoming_birthday()}'
     
 
@@ -220,7 +225,7 @@ def main():
         elif command == 'show-birthdays':
             print(show_birthdays(args, book))
         elif command == 'birthdays':
-            print(birthdays(args, book))
+            print(birthdays(book))
         else:                                             
             print('Invalid command!') 
 
