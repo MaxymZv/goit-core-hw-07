@@ -97,15 +97,17 @@ class AddressBook(UserDict):
     
     def find(self, name):
         return self.data.get(name, None)
-    
+#Method for showing upcoming birthdays    
     def get_upcoming_birthday(self):
-        today = datetime.now().date()
         upcoming_birthdays = []
+        today = datetime.now().date()
         for record in self.data.values():
-            if record.birthday and isinstance(record.birthday, Birthday):
+            if record.birthday:
                 birthday_date = record.birthday.value
                 if birthday_date.month == today.month and birthday_date.day >= today.day:
-                    upcoming_birthdays.append((record.name.value, birthday_date))
+                    upcoming_birthdays.append((record.name.value, birthday_date.strftime('%d.%m.%Y')))
+                elif birthday_date.month == (today.month % 12) + 1:
+                    upcoming_birthdays.append((record.name.value, birthday_date.strftime('%d.%m.%Y')))
         return upcoming_birthdays
     
 
@@ -113,13 +115,13 @@ class AddressBook(UserDict):
         return '\n'.join(str(record) for record in self.data.values())
 
 
-
+#Function for parsing input
 def parse_input(user_input):                           
     cmd, *args = user_input.split()                      
     cmd = cmd.lower().strip()                            
     return cmd, *args                                    
 
-
+#Decorator for handling input errors
 def input_error(func):
     @wraps(func)
     def inner(*args, **kwargs):
@@ -133,7 +135,7 @@ def input_error(func):
             return 'Give me name and phone number please'
     return inner
     
-
+#Adding contact
 @input_error
 def add_contacts(args, book):
     name, phone, *_ = args
@@ -145,16 +147,16 @@ def add_contacts(args, book):
     if phone:
         record.add_phone(phone)
     return massage
-
+#Changing contact number from old to new
 @input_error
 def change_contacts(args, book):
     name, old_phone, new_phone = args
     record = book.find(name)
     if record is None:
         raise KeyError(f'No contact found with name {name}')
-    record.edit_phone(new_phone)
+    record.edit_phone(old_phone, new_phone)
     return f'Phone number for {name} changed from {old_phone} to {new_phone}'
-
+#Showing phone numbers for contact
 @input_error
 def show_phone(args, book):
     name = args[0]
@@ -163,12 +165,12 @@ def show_phone(args, book):
         raise KeyError(f'No contact found with name {name}')
     phones = ', '.join(str(phone) for phone in record.phones)
     return f'Phone numbers for {name}: {phones}' if phones else f'No phone numbers found for {name}'
-
+#shows all contacts
 def show_all_contacts(book):
     if not book.data:
         return 'No contacts found.'
     return '\n'.join(str(record) for record in book.data.values())
-
+#Adding birthday for contact
 @input_error
 def add_birthday(args, book):
     name, birthday = args
@@ -176,25 +178,28 @@ def add_birthday(args, book):
     if record is None:
         raise KeyError(f'No contact found with name {name}')
     record.add_birthday(birthday)
-    return f'Birthday for {name} added: {record.birthday.value}' if record.birthday else f'No birthday found for {name}'
-
+    return f'Birthday for {name} added: {record.birthday.value.strftime("%d.%m.%Y")}'
+#Showing birthday for contact
 @input_error
-def show_birthdays(args ,book):
-    person_birthday = record.get_birthday()
-    if not record.get_birthday():
-        return 'No upcoming birthdays found.'
-    return '\n'.join(f'{name}: {date}' for name, date in person_birthday)
-
+def show_birthdays(args, book):
+    name = args[0]
+    record = book.find(name)
+    if record is None:
+        raise KeyError(f'No contact found with name {name}')
+    if record.birthday:
+        return f'Birthday for {name}: {record.birthday.value.strftime("%d.%m.%Y")}'
+    else:
+        return f'No birthday found for {name}'
+#Shows upcoming bidthdays
 @input_error
-def birthdays(args, book):
+def birthdays(book):
     upcoming_birthdays = book.get_upcoming_birthday()
     if not upcoming_birthdays:
         return 'No upcoming birthdays found.'
-    if record is None:
-        raise KeyError(f'No contact found with name {name}')
-    elif book.get_upcoming_birthday():
-        return f'Birthday for {name}: {book.get_upcoming_birthday()}'
-    
+    result = "Upcoming birthdays:\n"
+    for name, date in upcoming_birthdays:
+        result += f'{name}: {date}\n'
+    return result.strip()
 
 
     
